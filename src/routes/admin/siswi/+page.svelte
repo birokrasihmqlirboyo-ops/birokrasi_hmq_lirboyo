@@ -46,7 +46,22 @@
   // App Config
   let appConfig = $state({
     baseUrl: 'https://docs.google.com/spreadsheets/d/1ZkAwP_1qt4JjjxZ7d8JkTaK8UOZS4eIFxsMr12Rrptw/pub',
-    gids: {} as Record<string, string>
+    gids: {
+      "MA'HAD ALY II": '0',
+      "MA'HAD ALY I": '787389808',
+      "III ALIYAH": '1714589803',
+      "II ALIYAH": '1769555747',
+      "I ALIYAH": '1471274194',
+      "III TSANAWIYAH": '177291403',
+      "II TSANAWIYAH": '1242429904',
+      "I TSANAWIYAH": '1384286773',
+      "VI IBTIDAIYAH": '1624510172',
+      "V IBTIDAIYAH": '1672264612',
+      "IV IBTIDAIYAH": '716394098',
+      "III IBTIDAIYAH": '1928668931',
+      "II I'DADIYAH": '2053465326',
+      "I I'DADIYAH": '1628291417'
+    } as Record<string, string>
   });
 
   const filteredStudents = $derived(
