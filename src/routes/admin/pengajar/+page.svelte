@@ -28,8 +28,8 @@
   
   // App Config
   let appConfig = $state({
-    baseUrl: '',
-    gids: {} as Record<string, string>
+    baseUrl: 'https://docs.google.com/spreadsheets/d/1JmucUbTx_gxn1nBydgMcgF5dgyJOaaP9oG7_RIJcrAo/pub',
+    gids: { 'PENGAJAR PUTRA': '735048396' } as Record<string, string>
   });
 
   const filteredStudents = $derived(

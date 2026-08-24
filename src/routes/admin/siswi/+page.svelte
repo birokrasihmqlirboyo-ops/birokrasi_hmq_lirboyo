@@ -45,7 +45,7 @@
   
   // App Config
   let appConfig = $state({
-    baseUrl: '',
+    baseUrl: 'https://docs.google.com/spreadsheets/d/1ZkAwP_1qt4JjjxZ7d8JkTaK8UOZS4eIFxsMr12Rrptw/pub',
     gids: {} as Record<string, string>
   });
 
