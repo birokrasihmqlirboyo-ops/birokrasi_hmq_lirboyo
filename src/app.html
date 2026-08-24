@@ -12,6 +12,15 @@
 		<meta name="theme-color" content="#ffffff" />
 		<link rel="apple-touch-icon" href="%sveltekit.assets%/logo_hmq.png">
 		<script>
+			// Catch PWA install prompt early
+			window.deferredPWAInstallPrompt = null;
+			window.addEventListener('beforeinstallprompt', (e) => {
+				e.preventDefault();
+				window.deferredPWAInstallPrompt = e;
+				// Dispatch custom event so Svelte components know it's ready
+				window.dispatchEvent(new Event('pwa-prompt-ready'));
+			});
+
 			if ('serviceWorker' in navigator) {
 				window.addEventListener('load', () => {
 					navigator.serviceWorker.register('/service-worker.js').catch(err => console.log('SW registration failed:', err));
