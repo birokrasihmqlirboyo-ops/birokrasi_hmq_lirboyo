@@ -21,14 +21,7 @@
     // PWA Install Prompt Logic
     const checkAndShowPrompt = (e: any) => {
       deferredPrompt = e;
-      const lastDismissed = localStorage.getItem('installPromptDismissedAt');
-      if (lastDismissed) {
-        const timeSinceDismissed = Date.now() - parseInt(lastDismissed, 10);
-        if (timeSinceDismissed < 10 * 60 * 1000) {
-          return; // Skip showing if within 10 minutes
-        }
-      }
-      setTimeout(() => { showInstallPrompt = true; }, 2000);
+      showInstallPrompt = true; // Show instantly for debugging
     };
 
     if (window.deferredPWAInstallPrompt) {
