@@ -28,7 +28,7 @@
   
   // App Config
   let appConfig = $state({
-    baseUrl: 'https://docs.google.com/spreadsheets/d/1JmucUbTx_gxn1nBydgMcgF5dgyJOaaP9oG7_RIJcrAo/pub',
+    baseUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRJsVcfa7JzRWganlJ9kAhhcFXZdPs8e1nMhTzEWIPDP37lFUVtOQVT1mXMKhlEjONDN3eZ_d0ODzYM/pub',
     gids: { 
       'PENGAJAR PUTRA': '0',
       'PENGAJAR PUTRI': '735048396' 

@@ -45,7 +45,7 @@
   
   // App Config
   let appConfig = $state({
-    baseUrl: 'https://docs.google.com/spreadsheets/d/1ZkAwP_1qt4JjjxZ7d8JkTaK8UOZS4eIFxsMr12Rrptw/pub',
+    baseUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTYXam4Fnza1Ud_Ebl3LDXYKEbiE7b0Sxyek63isNzfjDpd1bMSN3Kl6wNBs3rwcn9iaLLtqtHlzP_J/pub',
     gids: {
       "MA'HAD ALY II": '0',
       "MA'HAD ALY I": '787389808',
