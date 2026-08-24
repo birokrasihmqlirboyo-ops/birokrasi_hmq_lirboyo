@@ -85,23 +85,6 @@
   }
 
   onMount(() => {
-    // Load config from local storage
-    const savedConfig = localStorage.getItem('hmqPengajarConfig');
-    if (savedConfig) {
-      try {
-        const parsed = JSON.parse(savedConfig);
-        if (parsed.baseUrl) appConfig.baseUrl = parsed.baseUrl;
-        if (parsed.gids) appConfig.gids = parsed.gids;
-      } catch (e) {
-        console.error('Failed to parse config');
-      }
-    } else {
-      // Initialize empty GIDs if not found
-      CLASSES.forEach(c => {
-        appConfig.gids[c] = '';
-      });
-    }
-
     if (appConfig.baseUrl) {
       fetchStudentsForClass(activeClass);
     }
