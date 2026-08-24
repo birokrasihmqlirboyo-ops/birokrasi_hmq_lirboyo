@@ -7,32 +7,12 @@
 
   let isLoggingOut = $state(false);
   let isMobileMenuOpen = $state(false);
-  
-  // PWA Install State
-  let deferredPrompt = $state<any>(null);
-  let showInstallPrompt = $state(false);
 
   onMount(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       goto('/login');
     }
-
-    // PWA Install Prompt Logic
-    const checkAndShowPrompt = (e: any) => {
-      deferredPrompt = e;
-      showInstallPrompt = true; // Show instantly for debugging
-    };
-
-    if (window.deferredPWAInstallPrompt) {
-      checkAndShowPrompt(window.deferredPWAInstallPrompt);
-    }
-    
-    window.addEventListener('pwa-prompt-ready', () => {
-      if (window.deferredPWAInstallPrompt) {
-        checkAndShowPrompt(window.deferredPWAInstallPrompt);
-      }
-    });
   });
 
   async function handleLogout() {
@@ -40,47 +20,7 @@
     await supabase.auth.signOut();
     goto('/login');
   }
-
-  async function handleInstallApp() {
-    if (deferredPrompt) {
-      showInstallPrompt = false;
-      deferredPrompt.prompt(); // Memanggil popup bawaan Google (Wajib dari aturan browser)
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome !== 'accepted') {
-        localStorage.setItem('installPromptDismissedAt', Date.now().toString());
-      }
-      deferredPrompt = null;
-      window.deferredPWAInstallPrompt = null;
-    }
-  }
-
-  function handleDismissInstall() {
-    showInstallPrompt = false;
-    localStorage.setItem('installPromptDismissedAt', Date.now().toString());
-  }
 </script>
-
-<!-- PWA Install Modal -->
-{#if showInstallPrompt}
-  <div class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm transition-all duration-300">
-    <div class="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm text-center">
-      <div class="w-16 h-16 bg-blue-50/50 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-blue-100">
-        <img src="/logo_hmq.png" alt="Logo" class="w-10 h-10 object-contain" />
-      </div>
-      <h2 class="text-xl font-bold text-gray-900 mb-2">Instal Aplikasi HMQ?</h2>
-      <p class="text-sm text-gray-500 mb-6">Apakah ingin di instal di HP biar gampang diakses dan nggak usah repot buka browser terus?</p>
-      
-      <div class="space-y-3">
-        <button class="w-full bg-primary hover:bg-primary/90 text-white font-medium py-3 rounded-xl transition-colors shadow-sm" onclick={handleInstallApp}>
-          Ya, Instal Sekarang
-        </button>
-        <button class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 rounded-xl transition-colors" onclick={handleDismissInstall}>
-          Nanti Saja
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
 
 <div class="flex h-screen bg-[#f8fafc] overflow-hidden">
   <!-- Mobile Sidebar Overlay -->
