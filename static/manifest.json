@@ -1,0 +1,20 @@
+{
+  "name": "Birokrasi HMQ Admin",
+  "short_name": "Birokrasi HMQ",
+  "start_url": "/admin",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/logo_hmq.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo_hmq.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
