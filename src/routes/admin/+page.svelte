@@ -7,7 +7,8 @@
   import { Document, Packer, Paragraph, TextRun, ImageRun, Table as DocxTable, TableRow, TableCell, BorderStyle, WidthType, AlignmentType, PageBreak } from 'docx';
   import { saveAs } from 'file-saver';
   import * as XLSX from 'xlsx';
-  import { Eye, FileDown, Pencil, Trash2, Filter } from "lucide-svelte";
+  import { Eye, FileDown, Pencil, Trash2, Filter, Loader2, Search, Plus, ChevronDown } from "lucide-svelte";
+  import ColumnFilter from '$lib/components/ColumnFilter.svelte';
   import { terbilang } from '$lib/utils';
 
   let transactions: any[] = $state([]);
@@ -38,6 +39,14 @@
     return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
   });
 
+  let searchQuery = $state('');
+  let columnFilters = $state<Record<string, string>>({});
+
+  let uniqueColumnValues = $derived({
+    'Seksi': Array.from(new Set(transactions.map(tx => tx.seksi).filter(Boolean))).sort(),
+    'Nama Toko': Array.from(new Set(transactions.map(tx => tx.nama_toko).filter(Boolean))).sort()
+  });
+
   let filteredTransactions = $derived(
     transactions.filter(tx => {
       if (!tx.tanggal_pembelian) return false;
@@ -47,8 +56,24 @@
       
       const matchBulan = filterBulan === 'semua' || mm === filterBulan;
       const matchTahun = filterTahun === 'semua' || yyyy === filterTahun;
-      
-      return matchBulan && matchTahun;
+      if (!matchBulan || !matchTahun) return false;
+
+      // Global search
+      if (searchQuery) {
+        const term = searchQuery.toLowerCase();
+        const searchableText = `${tx.seksi} ${tx.nama_toko} ${tx.tanggal_pembelian} ${tx.nama_kegiatan || ''}`.toLowerCase();
+        const itemsText = tx.transaction_items?.map((item: any) => item.nama_barang).join(' ').toLowerCase() || '';
+        
+        if (!searchableText.includes(term) && !itemsText.includes(term)) {
+          return false;
+        }
+      }
+
+      // Column filters
+      if (columnFilters['Seksi'] && tx.seksi !== columnFilters['Seksi']) return false;
+      if (columnFilters['Nama Toko'] && tx.nama_toko !== columnFilters['Nama Toko']) return false;
+
+      return true;
     })
   );
 
@@ -428,11 +453,18 @@
     }
   }
 
+  let isGeneratingExcel = $state(false);
   async function executeDownloadExcel() {
+    isGeneratingExcel = true;
     try {
+      // Allow UI to update loading state
+      await new Promise(r => setTimeout(r, 100));
       const dataToDownload = transactions.filter(tx => {
         if (!tx.tanggal_pembelian) return false;
+        
         const parts = tx.tanggal_pembelian.split('-');
+        if (parts.length !== 3) return false;
+        
         const yyyy = parts[0];
         const mm = parseInt(parts[1], 10).toString();
         
@@ -443,7 +475,7 @@
       });
 
       if (dataToDownload.length === 0) {
-        alert('Tidak ada data transaksi untuk kriteria yang dipilih.');
+        alert('Tidak ada data pada periode ini untuk di-download.');
         return;
       }
 
@@ -456,14 +488,14 @@
             'Tanggal Pembelian': tx.tanggal_pembelian,
             'Tanggal Input': new Date(tx.tanggal_input).toLocaleString('id-ID'),
             'Nama Toko': tx.nama_toko,
-            'Kegiatan': tx.nama_kegiatan || '-',
+            'Nama Kegiatan': tx.nama_kegiatan || '-',
             'Nama Barang': item.nama_barang,
             'Jumlah': item.jumlah,
-            'Harga Satuan (Rp)': item.harga_satuan,
-            'Diskon (Rp)': item.diskon_nominal,
-            'Total Harga (Rp)': totalHarga,
-            'Link Foto Barang': tx.foto_barang_url || '-',
-            'Link Foto Nota': tx.foto_nota_url || '-'
+            'Harga Satuan': item.harga_satuan,
+            'Diskon Nominal': item.diskon_nominal,
+            'Total Harga': totalHarga,
+            'Link Bukti Barang': tx.foto_barang_url || '-',
+            'Link Bukti Nota': tx.foto_nota_url || '-'
           });
         });
       });
@@ -481,6 +513,8 @@
       showExcelModal = false;
     } catch (error: any) {
       alert('Terjadi kesalahan saat download excel: ' + error.message);
+    } finally {
+      isGeneratingExcel = false;
     }
   }
 
@@ -491,8 +525,8 @@
   }
 </script>
 
-<div class="p-6 w-full max-w-[1600px] mx-auto space-y-6">
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div class="p-4 sm:p-8 w-full max-w-[1600px] mx-auto space-y-6">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
     <div class="flex items-center gap-4">
       <div>
         <h1 class="text-3xl font-bold tracking-tight text-foreground">Dashboard Admin</h1>
@@ -509,13 +543,28 @@
         </div>
       {/if}
       
+      <!-- Global Search -->
+      <div class="relative w-full sm:w-64">
+        <Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <input 
+          type="text" 
+          bind:value={searchQuery}
+          placeholder="Cari transaksi..." 
+          class="pl-9 w-full p-2.5 bg-white border-2 border-gray-200 rounded-xl text-sm focus:ring-4 focus:ring-primary/20 outline-none hover:border-gray-300 transition-all shadow-sm text-gray-800"
+        />
+      </div>
+
       <button type="button" onclick={() => showFilterModal = true} class="p-2.5 border-2 border-gray-200 rounded-xl bg-white hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm text-gray-700 focus:ring-4 focus:ring-primary/20 outline-none" title="Filter Data">
         <Filter class="w-5 h-5" />
       </button>
 
-      <Button variant="outline" onclick={openExcelModal} class="bg-emerald-600 text-white hover:bg-emerald-700 hover:text-white border-0 shadow-sm rounded-xl w-full sm:w-auto">Download Excel</Button>
-      <Button variant="outline" href="/" class="shadow-sm rounded-xl w-full sm:w-auto">Ke Halaman Input</Button>
-      <Button variant="destructive" onclick={handleLogout} class="shadow-sm rounded-xl w-full sm:w-auto">Logout</Button>
+      <button type="button" onclick={openExcelModal} class="p-2.5 bg-emerald-600 text-white rounded-xl shadow-sm hover:bg-emerald-700 transition-colors focus:ring-4 focus:ring-emerald-600/20 outline-none" title="Download Excel">
+        <FileDown class="w-5 h-5" />
+      </button>
+
+      <a href="/" class="p-2.5 bg-white border-2 border-gray-200 text-gray-700 rounded-xl shadow-sm hover:bg-gray-50 hover:border-gray-300 transition-colors focus:ring-4 focus:ring-primary/20 outline-none" title="Ke Halaman Input">
+        <Plus class="w-5 h-5" />
+      </a>
     </div>
   </div>
 
@@ -534,8 +583,8 @@
   <div class="border rounded-md">
     <Table.Root>
       <Table.Header>
-        <Table.Row>
-          <Table.Head class="w-10">
+        <Table.Row class="bg-gray-100/50">
+          <Table.Head class="w-10 border-r border-gray-200 text-center align-middle">
             <input type="checkbox"
               checked={filteredTransactions.length > 0 && selectedTransactions.length === filteredTransactions.length}
               onchange={(e) => {
@@ -547,13 +596,27 @@
               }}
               class="w-4 h-4 rounded text-primary focus:ring-primary/20 cursor-pointer" />
           </Table.Head>
-          <Table.Head>Tanggal</Table.Head>
-          <Table.Head>Seksi</Table.Head>
-          <Table.Head>Nama Toko</Table.Head>
-          <Table.Head>Total Barang</Table.Head>
-          <Table.Head>Total Belanja</Table.Head>
-          <Table.Head>Lampiran</Table.Head>
-          <Table.Head class="text-right">Aksi</Table.Head>
+          <Table.Head class="border-r border-gray-200 text-center font-semibold text-gray-700">Tanggal</Table.Head>
+          <Table.Head class="border-r border-gray-200 text-center font-semibold text-gray-700">Seksi</Table.Head>
+          <Table.Head class="border-r border-gray-200 text-center font-semibold text-gray-700">Nama Toko</Table.Head>
+          <Table.Head class="border-r border-gray-200 text-center font-semibold text-gray-700">Total Barang</Table.Head>
+          <Table.Head class="border-r border-gray-200 text-center font-semibold text-gray-700">Total Belanja</Table.Head>
+          <Table.Head class="border-r border-gray-200 text-center font-semibold text-gray-700">Lampiran</Table.Head>
+          <Table.Head class="text-center font-semibold text-gray-700">Aksi</Table.Head>
+        </Table.Row>
+        <Table.Row class="bg-gray-50">
+          <Table.Head class="border-r border-gray-200"></Table.Head>
+          <Table.Head class="border-r border-gray-200"></Table.Head>
+          <Table.Head class="p-1 border-r border-gray-200">
+            <ColumnFilter options={uniqueColumnValues['Seksi']} bind:value={columnFilters['Seksi']} placeholder="Semua Seksi" />
+          </Table.Head>
+          <Table.Head class="p-1 border-r border-gray-200">
+            <ColumnFilter options={uniqueColumnValues['Nama Toko']} bind:value={columnFilters['Nama Toko']} placeholder="Semua Toko" />
+          </Table.Head>
+          <Table.Head class="border-r border-gray-200"></Table.Head>
+          <Table.Head class="border-r border-gray-200"></Table.Head>
+          <Table.Head class="border-r border-gray-200"></Table.Head>
+          <Table.Head></Table.Head>
         </Table.Row>
       </Table.Header>
       <Table.Body>
@@ -568,8 +631,8 @@
         {:else}
           {#each filteredTransactions as tx}
             {@const totalBelanja = tx.transaction_items.reduce((sum: number, item: any) => sum + ((item.jumlah * item.harga_satuan) - item.diskon_nominal), 0)}
-            <Table.Row>
-              <Table.Cell>
+            <Table.Row class="hover:bg-primary/5 transition-colors group">
+              <Table.Cell class="border-r border-gray-200 text-center align-middle">
                 <input type="checkbox"
                   checked={selectedTransactions.includes(tx.id)}
                   onchange={(e) => {
@@ -581,15 +644,15 @@
                   }}
                   class="w-4 h-4 rounded text-primary focus:ring-primary/20 cursor-pointer" />
               </Table.Cell>
-              <Table.Cell>{new Date(tx.tanggal_pembelian).toLocaleDateString('id-ID')}</Table.Cell>
-              <Table.Cell>{tx.seksi}</Table.Cell>
-              <Table.Cell>
+              <Table.Cell class="border-r border-gray-200 text-center align-middle font-medium">{new Date(tx.tanggal_pembelian).toLocaleDateString('id-ID')}</Table.Cell>
+              <Table.Cell class="border-r border-gray-200 text-center align-middle">{tx.seksi}</Table.Cell>
+              <Table.Cell class="border-r border-gray-200 text-center align-middle">
                 <div class="font-medium">{tx.nama_toko}</div>
                 {#if tx.nama_kegiatan}
                   <div class="text-xs text-muted-foreground">{tx.nama_kegiatan}</div>
                 {/if}
               </Table.Cell>
-              <Table.Cell>
+              <Table.Cell class="border-r border-gray-200 align-middle">
                 <div class="flex flex-col gap-1.5">
                   {#each tx.transaction_items as item}
                     {@const subtotal = (item.jumlah * item.harga_satuan) - item.diskon_nominal}
@@ -603,9 +666,9 @@
                   {/each}
                 </div>
               </Table.Cell>
-              <Table.Cell>{formatRupiah(totalBelanja)}</Table.Cell>
-              <Table.Cell>
-                <div class="flex gap-2">
+              <Table.Cell class="border-r border-gray-200 text-center align-middle font-semibold text-gray-700">{formatRupiah(totalBelanja)}</Table.Cell>
+              <Table.Cell class="border-r border-gray-200 text-center align-middle">
+                <div class="flex gap-2 justify-center">
                   {#if tx.foto_nota_url}
                     <button type="button" onclick={() => openImagePopup(tx.foto_nota_url, 'Nota ' + tx.nama_toko)} class="p-2 bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors" title="Lihat Nota">
                       <Eye class="w-4 h-4" />
@@ -623,8 +686,8 @@
                   {/if}
                 </div>
               </Table.Cell>
-              <Table.Cell class="text-right align-top">
-                <div class="flex gap-2 justify-end">
+              <Table.Cell class="text-center align-middle">
+                <div class="flex gap-2 justify-center">
                   <a href={`/admin/edit/${tx.id}`} class="p-2 bg-amber-50 text-amber-600 rounded-md hover:bg-amber-100 transition-colors" title="Edit Transaksi">
                     <Pencil class="w-4 h-4" />
                   </a>
@@ -706,9 +769,13 @@
       </div>
 
       <div class="p-4 border-t bg-gray-50 flex justify-end gap-3">
-        <Button variant="outline" onclick={() => showExcelModal = false}>Batal</Button>
-        <Button onclick={executeDownloadExcel} class="bg-emerald-600 hover:bg-emerald-700 text-white border-0 flex items-center gap-2">
-          <FileDown class="w-4 h-4" /> Download
+        <Button variant="outline" onclick={() => showExcelModal = false} disabled={isGeneratingExcel}>Batal</Button>
+        <Button onclick={executeDownloadExcel} disabled={isGeneratingExcel} class="bg-emerald-600 hover:bg-emerald-700 text-white border-0 flex items-center gap-2 min-w-[140px] justify-center">
+          {#if isGeneratingExcel}
+            <Loader2 class="w-4 h-4 animate-spin" /> Menyusun...
+          {:else}
+            <FileDown class="w-4 h-4" /> Download
+          {/if}
         </Button>
       </div>
     </div>

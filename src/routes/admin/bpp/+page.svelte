@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { supabase } from '$lib/supabaseClient';
   import { Button } from '$lib/components/ui/button';
-  import { Save, Download, Settings, ArrowLeft } from 'lucide-svelte';
+  import { Save, Download, Settings, ArrowLeft, ChevronDown, Loader2 } from 'lucide-svelte';
 
   // State Data
   let transactions: any[] = $state([]);
@@ -175,11 +175,15 @@
     return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(val);
   }
 
-  function exportToWord() {
-    if (filterBulan === 'semua' || filterTahun === 'semua') {
-      alert('Pilih Bulan dan Tahun yang spesifik untuk mencetak BPP.');
-      return;
-    }
+  let isGeneratingWord = $state(false);
+  async function exportToWord() {
+    isGeneratingWord = true;
+    try {
+      await new Promise(r => setTimeout(r, 100));
+      if (filterBulan === 'semua' || filterTahun === 'semua') {
+        alert('Pilih Bulan dan Tahun yang spesifik untuk mencetak BPP.');
+        return;
+      }
 
     // Filter items yang ada pajaknya saja (atau semuanya jika ingin seperti format awal)
     // Berdasarkan request, biasanya buku pembantu pajak berisi rincian yang KENA PAJAK saja.
@@ -357,6 +361,11 @@
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    } catch (e) {
+      alert('Terjadi kesalahan saat mencetak Word: ' + e);
+    } finally {
+      isGeneratingWord = false;
+    }
   }
 </script>
 
@@ -364,54 +373,53 @@
   <!-- Header -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
     <div>
-      <div class="flex items-center gap-3 mb-2">
-        <a href="/admin" class="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors text-gray-600">
-          <ArrowLeft class="w-5 h-5" />
-        </a>
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Buku Pembantu Pajak (BPP)</h1>
-      </div>
-      <p class="text-gray-500 pl-14">Catat dan cetak rincian pajak (PPh 21, PPh 23, PPN, dll) untuk setiap pengeluaran.</p>
+      <h1 class="text-2xl font-bold tracking-tight text-gray-900 mb-1">Buku Pembantu Pajak (BPP)</h1>
+      <p class="text-sm text-gray-500">Catat dan cetak rincian pajak (PPh 21, PPh 23, PPN, dll) untuk setiap pengeluaran.</p>
     </div>
     
-    <div class="flex flex-wrap gap-3 w-full sm:w-auto mt-4 sm:mt-0">
-      <Button variant="outline" onclick={() => showSettingsModal = true} class="bg-white border-2 hover:bg-gray-50 flex items-center gap-2">
-        <Settings class="w-4 h-4" /> Pengaturan BPP
-      </Button>
-
-      <Button onclick={exportToWord} class="bg-blue-600 hover:bg-blue-700 text-white shadow-md flex items-center gap-2">
-        <Download class="w-4 h-4" /> Cetak Word (K-2)
-      </Button>
-    </div>
-  </div>
-
-  <!-- Filters -->
-  <div class="flex flex-wrap gap-4 items-end bg-gray-50/50 p-4 rounded-xl border flex-col sm:flex-row justify-between">
-    <div class="flex gap-4">
-      <div>
-        <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">Bulan</label>
-        <select bind:value={filterBulan} class="p-2 border-2 rounded-lg bg-white font-semibold text-sm w-36 outline-none focus:border-primary">
+    <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+      <div class="relative">
+        <select bind:value={filterBulan} class="appearance-none p-2.5 pl-3 pr-8 border-2 border-gray-200 rounded-xl bg-white font-semibold text-sm w-36 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 hover:border-gray-300 transition-all shadow-sm text-gray-700 cursor-pointer">
           <option value="semua">Semua Bulan</option>
           {#each availableMonths as m}
             <option value={m}>{monthNames[m]}</option>
           {/each}
         </select>
+        <ChevronDown class="w-4 h-4 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
       </div>
-      <div>
-        <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">Tahun</label>
-        <select bind:value={filterTahun} class="p-2 border-2 rounded-lg bg-white font-semibold text-sm w-32 outline-none focus:border-primary">
+
+      <div class="relative">
+        <select bind:value={filterTahun} class="appearance-none p-2.5 pl-3 pr-8 border-2 border-gray-200 rounded-xl bg-white font-semibold text-sm w-32 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 hover:border-gray-300 transition-all shadow-sm text-gray-700 cursor-pointer">
           <option value="semua">Semua Tahun</option>
           {#each availableYears as t}
             <option value={t}>{t}</option>
           {/each}
         </select>
+        <ChevronDown class="w-4 h-4 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
       </div>
+
+      <button type="button" onclick={() => showSettingsModal = true} class="p-2.5 border-2 border-gray-200 rounded-xl bg-white hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm text-gray-700 focus:ring-4 focus:ring-primary/20 outline-none" title="Pengaturan BPP">
+        <Settings class="w-5 h-5" />
+      </button>
+
+      <button type="button" onclick={exportToWord} disabled={isGeneratingWord} class="p-2.5 bg-blue-600 text-white rounded-xl shadow-sm hover:bg-blue-700 transition-colors focus:ring-4 focus:ring-blue-600/20 outline-none disabled:opacity-50 disabled:cursor-not-allowed" title="Cetak Word (K-2)">
+        {#if isGeneratingWord}
+          <Loader2 class="w-5 h-5 animate-spin" />
+        {:else}
+          <Download class="w-5 h-5" />
+        {/if}
+      </button>
+
+      {#if hasUnsavedChanges}
+        <button type="button" onclick={simpanPerubahan} disabled={saving} class="p-2.5 bg-amber-500 text-white rounded-xl shadow-sm hover:bg-amber-600 transition-colors focus:ring-4 focus:ring-amber-500/20 outline-none disabled:opacity-50 disabled:cursor-not-allowed animate-pulse" title="Simpan Perubahan Pajak">
+          {#if saving}
+            <Loader2 class="w-5 h-5 animate-spin" />
+          {:else}
+            <Save class="w-5 h-5" />
+          {/if}
+        </button>
+      {/if}
     </div>
-    
-    {#if hasUnsavedChanges}
-      <Button onclick={simpanPerubahan} disabled={saving} class="bg-amber-500 hover:bg-amber-600 text-white font-bold animate-pulse flex items-center gap-2">
-        <Save class="w-4 h-4"/> {saving ? 'Menyimpan...' : 'Simpan Perubahan Pajak'}
-      </Button>
-    {/if}
   </div>
 
   <!-- BPP Table -->

@@ -169,15 +169,14 @@
   }
 </script>
 
-<div class="p-6 w-full max-w-[1600px] mx-auto space-y-6 flex flex-col h-full relative">
+<div class="p-4 sm:p-8 w-full max-w-[1600px] mx-auto space-y-6 flex flex-col h-full relative">
   <!-- Header -->
-  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 shrink-0">
     <div>
-      <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-600 flex items-center gap-3 pb-1">
-        <Users class="w-8 h-8 text-primary" />
-        Daftar Pengajar Madrasah
+      <h1 class="text-2xl font-bold tracking-tight text-gray-900 mb-1 flex items-center gap-2">
+        <Users class="w-6 h-6" /> Daftar Pengajar Madrasah
       </h1>
-      <p class="text-muted-foreground flex items-center gap-2 mt-1">
+      <p class="text-sm text-gray-500 flex items-center gap-2">
         {#if appConfig.baseUrl}
           <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
           Sistem Tersinkronisasi
@@ -195,17 +194,14 @@
     </div>
     
     <div class="flex items-center gap-3">
-      <Button variant="outline" onclick={() => isSettingsOpen = true} class="rounded-xl border-primary/20 text-primary hover:bg-primary/5">
-        <Settings class="w-4 h-4 mr-2" />
-        Pengaturan GID
+      <Button variant="outline" size="icon" onclick={() => isSettingsOpen = true} class="rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 h-10 w-10 shrink-0" title="Pengaturan GID">
+        <Settings class="w-4 h-4" />
       </Button>
-      <Button variant="outline" onclick={() => fetchStudentsForClass(activeClass)} class="rounded-xl" disabled={isStudentsLoading || !appConfig.baseUrl}>
-        <RefreshCw class="w-4 h-4 mr-2 {isStudentsLoading ? 'animate-spin' : ''}" />
-        Refresh
+      <Button variant="outline" size="icon" onclick={() => fetchStudentsForClass(activeClass)} class="rounded-xl border-gray-200 text-gray-600 hover:bg-gray-50 h-10 w-10 shrink-0" disabled={isStudentsLoading || !appConfig.baseUrl} title="Refresh Data">
+        <RefreshCw class="w-4 h-4 {isStudentsLoading ? 'animate-spin' : ''}" />
       </Button>
-      <Button class="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white" onclick={exportCsv} disabled={studentsData.length === 0}>
-        <FileDown class="w-4 h-4 mr-2" />
-        Export CSV
+      <Button size="icon" class="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white h-10 w-10 shrink-0" onclick={exportCsv} disabled={studentsData.length === 0} title="Export CSV">
+        <FileDown class="w-4 h-4" />
       </Button>
     </div>
   </div>

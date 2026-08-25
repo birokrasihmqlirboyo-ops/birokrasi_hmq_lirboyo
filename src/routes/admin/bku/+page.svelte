@@ -3,7 +3,7 @@
   import { supabase } from '$lib/supabaseClient';
   import { Button } from '$lib/components/ui/button';
   import * as Table from '$lib/components/ui/table';
-  import { Plus, Download, Settings, Trash2, ArrowLeft } from 'lucide-svelte';
+  import { Plus, Download, Settings, Trash2, ArrowLeft, ChevronDown, Loader2 } from 'lucide-svelte';
   import * as XLSX from 'xlsx';
 
   // State Data
@@ -207,11 +207,15 @@
     return new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 }).format(val);
   }
 
-  function exportToWord() {
-    if (bkuEntries.length === 0) {
-      alert('Tidak ada data untuk di-export.');
-      return;
-    }
+  let isGeneratingWord = $state(false);
+  async function exportToWord() {
+    isGeneratingWord = true;
+    try {
+      await new Promise(r => setTimeout(r, 100));
+      if (bkuEntries.length === 0) {
+        alert('Tidak ada data untuk di-export.');
+        return;
+      }
 
     let html = `
     <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
@@ -333,6 +337,11 @@
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+    } catch (e) {
+      alert('Terjadi kesalahan saat mencetak Word: ' + e);
+    } finally {
+      isGeneratingWord = false;
+    }
   }
 </script>
 
@@ -340,45 +349,42 @@
   <!-- Header -->
   <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
     <div>
-      <div class="flex items-center gap-3 mb-2">
-        <a href="/admin" class="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors text-gray-600">
-          <ArrowLeft class="w-5 h-5" />
-        </a>
-        <h1 class="text-3xl font-bold tracking-tight text-gray-900">Buku Kas Umum (BKU)</h1>
-      </div>
-      <p class="text-gray-500 pl-14">Rekapitulasi total Penerimaan dan Pengeluaran.</p>
+      <h1 class="text-2xl font-bold tracking-tight text-gray-900 mb-1">Buku Kas Umum (BKU)</h1>
+      <p class="text-sm text-gray-500">Rekapitulasi total Penerimaan dan Pengeluaran.</p>
     </div>
     
-    <div class="flex flex-wrap gap-3 w-full sm:w-auto mt-4 sm:mt-0">
-      <Button variant="outline" onclick={() => showSettingsModal = true} class="bg-white border-2 hover:bg-gray-50 flex items-center gap-2">
-        <Settings class="w-4 h-4" /> Pengaturan BKU
-      </Button>
+    <div class="flex flex-wrap items-center gap-3 w-full sm:w-auto mt-4 sm:mt-0">
+      <div class="relative">
+        <select bind:value={filterBulan} class="appearance-none p-2.5 pl-3 pr-8 border-2 border-gray-200 rounded-xl bg-white font-semibold text-sm w-36 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 hover:border-gray-300 transition-all shadow-sm text-gray-700 cursor-pointer">
+          <option value="semua">Semua Bulan</option>
+          {#each availableMonths as m}
+            <option value={m}>{monthNames[m]}</option>
+          {/each}
+        </select>
+        <ChevronDown class="w-4 h-4 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+      </div>
 
-      <Button onclick={exportToWord} class="bg-blue-600 hover:bg-blue-700 text-white shadow-md flex items-center gap-2">
-        <Download class="w-4 h-4" /> Cetak Word
-      </Button>
-    </div>
-  </div>
+      <div class="relative">
+        <select bind:value={filterTahun} class="appearance-none p-2.5 pl-3 pr-8 border-2 border-gray-200 rounded-xl bg-white font-semibold text-sm w-32 outline-none focus:border-primary focus:ring-4 focus:ring-primary/20 hover:border-gray-300 transition-all shadow-sm text-gray-700 cursor-pointer">
+          <option value="semua">Semua Tahun</option>
+          {#each availableYears as t}
+            <option value={t}>{t}</option>
+          {/each}
+        </select>
+        <ChevronDown class="w-4 h-4 text-gray-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+      </div>
 
-  <!-- Filters -->
-  <div class="flex flex-wrap gap-4 items-end bg-gray-50/50 p-4 rounded-xl border">
-    <div>
-      <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">Bulan</label>
-      <select bind:value={filterBulan} class="p-2 border-2 rounded-lg bg-white font-semibold text-sm w-36 outline-none focus:border-primary">
-        <option value="semua">Semua Bulan</option>
-        {#each availableMonths as m}
-          <option value={m}>{monthNames[m]}</option>
-        {/each}
-      </select>
-    </div>
-    <div>
-      <label class="block text-xs font-bold text-gray-600 mb-1.5 uppercase tracking-wider">Tahun</label>
-      <select bind:value={filterTahun} class="p-2 border-2 rounded-lg bg-white font-semibold text-sm w-32 outline-none focus:border-primary">
-        <option value="semua">Semua Tahun</option>
-        {#each availableYears as t}
-          <option value={t}>{t}</option>
-        {/each}
-      </select>
+      <button type="button" onclick={() => showSettingsModal = true} class="p-2.5 border-2 border-gray-200 rounded-xl bg-white hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm text-gray-700 focus:ring-4 focus:ring-primary/20 outline-none" title="Pengaturan BKU">
+        <Settings class="w-5 h-5" />
+      </button>
+
+      <button type="button" onclick={exportToWord} disabled={isGeneratingWord} class="p-2.5 bg-blue-600 text-white rounded-xl shadow-sm hover:bg-blue-700 transition-colors focus:ring-4 focus:ring-blue-600/20 outline-none disabled:opacity-50 disabled:cursor-not-allowed" title="Cetak Word">
+        {#if isGeneratingWord}
+          <Loader2 class="w-5 h-5 animate-spin" />
+        {:else}
+          <Download class="w-5 h-5" />
+        {/if}
+      </button>
     </div>
   </div>
 
